@@ -1,0 +1,32 @@
+name: Test arbitrary inputs passed as variables
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          query: |
+            query($owner: String!, $repo: String!) {
+              repository(owner: $owner, name: $repo) {
+                nameWithOwner
+              }
+            }
+          owner: octokit
+          repo: graphql-action
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert data output
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+          NWO: ${{ fromJSON(steps.action.outputs.data).repository.nameWithOwner }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$NWO" != "octokit/graphql-action" ]; then
+            echo "FAIL: expected 'octokit/graphql-action', got '$NWO'"
+            exit 1
+          fi
+          echo "PASS"

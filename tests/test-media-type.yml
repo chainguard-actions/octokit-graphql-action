@@ -1,0 +1,39 @@
+name: Test mediaType preview input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          query: |
+            query {
+              repository(owner: "octokit", name: "graphql-action") {
+                name
+                owner { login }
+              }
+            }
+          mediaType: |
+            previews:
+              - merge-info
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert data output with mediaType set
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+          REPO_NAME: ${{ fromJSON(steps.action.outputs.data).repository.name }}
+          OWNER: ${{ fromJSON(steps.action.outputs.data).repository.owner.login }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$REPO_NAME" != "graphql-action" ]; then
+            echo "FAIL: expected repository.name 'graphql-action', got '$REPO_NAME'"
+            exit 1
+          fi
+          if [ "$OWNER" != "octokit" ]; then
+            echo "FAIL: expected owner 'octokit', got '$OWNER'"
+            exit 1
+          fi
+          echo "PASS"

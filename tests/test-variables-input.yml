@@ -1,0 +1,42 @@
+name: Test variables input (YAML)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          query: |
+            query($owner: String!, $repo: String!, $first: Int!) {
+              repository(owner: $owner, name: $repo) {
+                name
+                languages(first: $first) { nodes { name } }
+              }
+            }
+          variables: |
+            owner: octokit
+            repo: graphql-action
+            first: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert data output
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+          REPO_NAME: ${{ fromJSON(steps.action.outputs.data).repository.name }}
+          LANG_COUNT: ${{ toJSON(fromJSON(steps.action.outputs.data).repository.languages.nodes) }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$REPO_NAME" != "graphql-action" ]; then
+            echo "FAIL: expected 'graphql-action', got '$REPO_NAME'"
+            exit 1
+          fi
+          COUNT=$(echo "$LANG_COUNT" | grep -c '"name"' || true)
+          echo "language nodes: $COUNT"
+          if [ "$COUNT" -gt 1 ]; then
+            echo "FAIL: expected at most 1 language node (first: 1)"
+            exit 1
+          fi
+          echo "PASS"
