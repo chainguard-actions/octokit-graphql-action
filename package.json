@@ -1,0 +1,64 @@
+{
+  "name": "@octokit/graphql-action",
+  "private": true,
+  "version": "0.0.0-development",
+  "description": "A GitHub Action to send queries to GitHub's GraphQL API",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rollup --config rollup.config.js",
+    "lint": "prettier --check *.js **/*.{md,yml} package.json",
+    "lint:fix": "prettier --write *.js **/*.{md,yml} package.json"
+  },
+  "repository": "github:octokit/graphql-action",
+  "keywords": [
+    "github-action"
+  ],
+  "author": "Gregor Martynus (https://twitter.com/gr2m)",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^2.0.0",
+    "@octokit/action": "^8.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@semantic-release/git": "^10.0.0",
+    "js-yaml": "^4.0.0",
+    "prettier": "^3.6.2",
+    "rollup": "^4.52.5"
+  },
+  "release": {
+    "branches": [
+      "+([0-9]).x",
+      "main",
+      "next",
+      {
+        "name": "beta",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      [
+        "@semantic-release/git",
+        {
+          "assets": [
+            "dist/*.js"
+          ],
+          "message": "build(release): compiled action for ${nextRelease.version}\n\n[skip ci]"
+        }
+      ],
+      "@semantic-release/github"
+    ]
+  },
+  "publishConfig": {
+    "provenance": true
+  }
+}

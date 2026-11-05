@@ -1,0 +1,39 @@
+name: Test variables passed as extra inputs (numeric parsing)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          query: |
+            query issue($owner: String!, $repo: String!, $num: Int!) {
+              repository(owner: $owner, name: $repo) {
+                nameWithOwner
+                issueOrPullRequest(number: $num) {
+                  __typename
+                }
+              }
+            }
+          owner: octokit
+          repo: graphql-action
+          num: 1
+      - name: Assert data output
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q '"nameWithOwner": "octokit/graphql-action"'; then
+            echo "FAIL: expected nameWithOwner octokit/graphql-action"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -q '"__typename"'; then
+            echo "FAIL: expected issueOrPullRequest __typename (Int variable must be parsed)"
+            exit 1
+          fi
+          echo "PASS"

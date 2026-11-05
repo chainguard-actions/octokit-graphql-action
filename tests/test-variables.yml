@@ -1,0 +1,32 @@
+name: Test query with variables input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          query: |
+            query release($owner: String!, $repo: String!) {
+              repository(owner: $owner, name: $repo) {
+                nameWithOwner
+              }
+            }
+          variables: |
+            owner: octokit
+            repo: graphql-action
+      - name: Assert data output
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q '"nameWithOwner": "octokit/graphql-action"'; then
+            echo "FAIL: expected nameWithOwner octokit/graphql-action"
+            exit 1
+          fi
+          echo "PASS"
