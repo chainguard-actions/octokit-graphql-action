@@ -1,0 +1,42 @@
+name: Test extra inputs passed as variables (with integer parsing)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          query: |
+            query topics($owner: String!, $repo: String!, $first: Int!) {
+              repository(owner: $owner, name: $repo) {
+                name
+                languages(first: $first) {
+                  nodes { name }
+                }
+              }
+            }
+          owner: octokit
+          repo: graphql-action
+          first: 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Assert data output
+        env:
+          ACTUAL: ${{ steps.action.outputs.data }}
+        run: |
+          echo "actual: $ACTUAL"
+          NAME="$(node -e 'const d=JSON.parse(process.env.ACTUAL); console.log(d.repository.name)')"
+          COUNT="$(node -e 'const d=JSON.parse(process.env.ACTUAL); console.log(d.repository.languages.nodes.length)')"
+          echo "name: $NAME languages count: $COUNT"
+          if [ "$NAME" != "graphql-action" ]; then
+            echo "FAIL: expected repository name graphql-action"
+            exit 1
+          fi
+          if [ "$COUNT" -gt 1 ]; then
+            echo "FAIL: expected at most 1 language node (first: 1)"
+            exit 1
+          fi
+          echo "PASS"
